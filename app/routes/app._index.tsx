@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { json } from "@remix-run/node";
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, Link } from "@remix-run/react";
 import {
   Page,
   Card,
@@ -12,12 +12,15 @@ import {
   InlineStack,
   BlockStack,
   Button,
+  Select,
   Modal,
   Box,
 } from "@shopify/polaris";
 import { ImageIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import { APP_VERSION, CHANGELOG } from "../version";
+
+type ViewMode = "title" | "description";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
@@ -52,8 +55,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function Index() {
   const { products } = useLoaderData<typeof loader>();
   const [modalActive, setModalActive] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("title");
 
   const toggleModal = useCallback(() => setModalActive((active) => !active), []);
+  const handleViewModeChange = useCallback(
+    (value: string) => setViewMode(value as ViewMode),
+    []
+  );
+
+  const selectOptions = [
+    { label: "Meta Titles", value: "title" },
+    { label: "Meta Descriptions", value: "description" },
+  ];
 
   const resourceName = {
     singular: "product",
@@ -63,6 +76,11 @@ export default function Index() {
   const rowMarkup = products.map((product: any, index: number) => {
     const metaTitle = product.seo?.title;
     const metaDescription = product.seo?.description;
+    const currentSeoValue = viewMode === "title" ? metaTitle : metaDescription;
+    const productId = product.id.split("/").pop();
+
+    // Placeholder for future profile-generated rule output
+    const suggestedSeoValue = null; 
 
     return (
       <IndexTable.Row id={product.id} key={product.id} position={index}>
@@ -75,9 +93,11 @@ export default function Index() {
               size="small"
             />
             <BlockStack gap="050">
-              <Text variant="bodyMd" fontWeight="bold" as="span">
-                {product.title}
-              </Text>
+              <Link to={`/app/products/${productId}`} data-remix-react-link>
+                <Text variant="bodyMd" fontWeight="bold" as="span">
+                  {product.title}
+                </Text>
+              </Link>
               <Text variant="bodyXs" tone="subdued" as="span">
                 /{product.handle}
               </Text>
@@ -85,15 +105,15 @@ export default function Index() {
           </InlineStack>
         </IndexTable.Cell>
 
-        {/* SEO Element 1: Meta Title */}
+        {/* Current SEO Value Cell */}
         <IndexTable.Cell>
-          {metaTitle ? (
+          {currentSeoValue ? (
             <BlockStack gap="050">
               <Text variant="bodySm" as="p">
-                {metaTitle}
+                {currentSeoValue}
               </Text>
               <Text variant="bodyXs" tone="subdued" as="span">
-                {metaTitle.length} characters
+                {currentSeoValue.length} characters
               </Text>
             </BlockStack>
           ) : (
@@ -101,19 +121,21 @@ export default function Index() {
           )}
         </IndexTable.Cell>
 
-        {/* SEO Element 2: Meta Description */}
+        {/* Suggested SEO Value Cell */}
         <IndexTable.Cell>
-          {metaDescription ? (
+          {suggestedSeoValue ? (
             <BlockStack gap="050">
               <Text variant="bodySm" as="p">
-                {metaDescription}
+                {suggestedSeoValue}
               </Text>
               <Text variant="bodyXs" tone="subdued" as="span">
-                {metaDescription.length} characters
+                {(suggestedSeoValue as string).length} characters
               </Text>
             </BlockStack>
           ) : (
-            <Badge tone="attention">Not set</Badge>
+            <Text variant="bodySm" tone="subdued" as="span">
+              Pending profile rules...
+            </Text>
           )}
         </IndexTable.Cell>
       </IndexTable.Row>
@@ -132,6 +154,25 @@ export default function Index() {
       }
     >
       <BlockStack gap="400">
+        {/* Controls Card */}
+        <Card padding="300">
+          <InlineStack align="space-between" blockAlign="center">
+            <InlineStack gap="300" blockAlign="center">
+              <Select
+                label="Target Attribute"
+                labelInline
+                options={selectOptions}
+                onChange={handleViewModeChange}
+                value={viewMode}
+              />
+            </InlineStack>
+            <Text variant="bodySm" tone="subdued" as="span">
+              Viewing {viewMode === "title" ? "Titles" : "Descriptions"} for {products.length} products
+            </Text>
+          </InlineStack>
+        </Card>
+
+        {/* Table View */}
         <Card padding="0">
           <IndexTable
             resourceName={resourceName}
@@ -139,8 +180,8 @@ export default function Index() {
             selectable={false}
             headings={[
               { title: "Product" },
-              { title: "Meta Title" },
-              { title: "Meta Description" },
+              { title: viewMode === "title" ? "Current Title" : "Current Description" },
+              { title: viewMode === "title" ? "Suggested Title" : "Suggested Description" },
             ]}
           >
             {rowMarkup}
