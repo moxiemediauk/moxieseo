@@ -1,0 +1,24 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "b92b0c42daec1581f3d699892d6080b7"
+name = "Moxie SEO Dev"
+handle = "moxie-seo-dev"
+application_url = "https://moxieseo-production.up.railway.app"
+embedded = true
+
+[webhooks]
+api_version = "2026-07"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_products,write_products,read_content,write_content,read_themes,write_themes,read_script_tags,write_script_tags"
+
+[auth]
+redirect_urls = [
+  "https://moxieseo-production.up.railway.app/api/auth/callback",
+  "https://moxieseo-production.up.railway.app/api/auth/shopify/callback",
+  "https://moxieseo-production.up.railway.app/api/auth"
+]
+
+[build]
+automatically_update_urls_on_dev = true
