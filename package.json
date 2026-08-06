@@ -60,6 +60,7 @@
     "@shopify/plugin-cloudflare"
   ],
   "resolutions": {
+    "@shopify/shopify-api": "$@shopify/shopify-api",
     "@graphql-tools/url-loader": "8.0.16",
     "@graphql-codegen/client-preset": "4.7.0",
     "@graphql-codegen/typescript-operations": "4.5.0",
@@ -67,6 +68,7 @@
     "vite": "^6.2.2"
   },
   "overrides": {
+    "@shopify/shopify-api": "$@shopify/shopify-api",
     "@graphql-tools/url-loader": "8.0.16",
     "@graphql-codegen/client-preset": "4.7.0",
     "@graphql-codegen/typescript-operations": "4.5.0",
