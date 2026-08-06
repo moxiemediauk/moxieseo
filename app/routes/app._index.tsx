@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import { json } from "@remix-run/node";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
@@ -10,9 +11,13 @@ import {
   Badge,
   InlineStack,
   BlockStack,
+  Button,
+  Modal,
+  Box,
 } from "@shopify/polaris";
 import { ImageIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
+import { APP_VERSION, CHANGELOG } from "../version";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
@@ -46,6 +51,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function Index() {
   const { products } = useLoaderData<typeof loader>();
+  const [modalActive, setModalActive] = useState(false);
+
+  const toggleModal = useCallback(() => setModalActive((active) => !active), []);
 
   const resourceName = {
     singular: "product",
@@ -58,7 +66,7 @@ export default function Index() {
 
     return (
       <IndexTable.Row id={product.id} key={product.id} position={index}>
-        {/* Product Information */}
+        {/* Product Cell */}
         <IndexTable.Cell>
           <InlineStack gap="300" blockAlign="center" wrap={false}>
             <Thumbnail
@@ -113,21 +121,79 @@ export default function Index() {
   });
 
   return (
-    <Page title="Products SEO Data" compactTitle>
-      <Card padding="0">
-        <IndexTable
-          resourceName={resourceName}
-          itemCount={products.length}
-          selectable={false}
-          headings={[
-            { title: "Product" },
-            { title: "Meta Title" },
-            { title: "Meta Description" },
-          ]}
-        >
-          {rowMarkup}
-        </IndexTable>
-      </Card>
+    <Page
+      title="Products SEO Data"
+      subtitle={`v${APP_VERSION}`}
+      compactTitle
+      primaryAction={
+        <Button onClick={toggleModal} variant="secondary">
+          Updates Log
+        </Button>
+      }
+    >
+      <BlockStack gap="400">
+        <Card padding="0">
+          <IndexTable
+            resourceName={resourceName}
+            itemCount={products.length}
+            selectable={false}
+            headings={[
+              { title: "Product" },
+              { title: "Meta Title" },
+              { title: "Meta Description" },
+            ]}
+          >
+            {rowMarkup}
+          </IndexTable>
+        </Card>
+      </BlockStack>
+
+      {/* Updates Modal */}
+      <Modal
+        open={modalActive}
+        onClose={toggleModal}
+        title="Moxie SEO — Release Log"
+        primaryAction={{
+          content: "Close",
+          onAction: toggleModal,
+        }}
+      >
+        <Modal.Section>
+          <BlockStack gap="400">
+            {CHANGELOG.map((entry) => (
+              <Box
+                key={entry.version}
+                padding="300"
+                background="bg-surface-secondary"
+                borderRadius="200"
+              >
+                <BlockStack gap="200">
+                  <InlineStack align="space-between" blockAlign="center">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Text variant="headingSm" as="h3">
+                        Version {entry.version}
+                      </Text>
+                      <Badge tone={entry.status === "Current" ? "success" : "info"}>
+                        {entry.status}
+                      </Badge>
+                    </InlineStack>
+                    <Text variant="bodyXs" tone="subdued" as="span">
+                      {entry.date}
+                    </Text>
+                  </InlineStack>
+                  <BlockStack gap="100">
+                    {entry.changes.map((item, idx) => (
+                      <Text key={idx} variant="bodySm" as="p">
+                        • {item}
+                      </Text>
+                    ))}
+                  </BlockStack>
+                </BlockStack>
+              </Box>
+            ))}
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
     </Page>
   );
 }
