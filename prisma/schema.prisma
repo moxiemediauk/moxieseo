@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Core Shopify Session Management
+// -----------------------------------------------------------------------------
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+// -----------------------------------------------------------------------------
+// Meta Overrides (Products, Collections, Pages, Articles)
+// -----------------------------------------------------------------------------
+enum ResourceType {
+  PRODUCT
+  COLLECTION
+  PAGE
+  ARTICLE
+  HOMEPAGE
+}
+
+model MetaOverride {
+  id               String       @id @default(uuid())
+  shop             String       // e.g. "my-store.myshopify.com"
+  resourceId       String       // Shopify GID e.g. "gid://shopify/Product/12345"
+  resourceType     ResourceType
+  
+  // Custom Meta Content
+  title            String?
+  description      String?
+  canonicalUrl     String?
+  noIndex          Boolean      @default(false)
+  noFollow         Boolean      @default(false)
+  
+  // Social/OpenGraph Overrides
+  ogTitle          String?
+  ogDescription    String?
+  ogImage          String?
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@unique([shop, resourceId])
+  @@index([shop])
+}
+
+// -----------------------------------------------------------------------------
+// JSON-LD Structured Data Management
+// -----------------------------------------------------------------------------
+enum SchemaType {
+  ORGANIZATION
+  PRODUCT
+  BREADCRUMB
+  FAQ
+  ARTICLE
+  LOCAL_BUSINESS
+}
+
+model JsonLdSchema {
+  id           String     @id @default(uuid())
+  shop         String
+  schemaType   SchemaType
+  isEnabled    Boolean    @default(true)
+  
+  // JSON payload holding custom structured data properties/templates
+  data         Json
+  
+  // Optional target resource for specific item overrides (null = storewide default)
+  resourceId   String?
+  
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([shop])
+}
+
+// -----------------------------------------------------------------------------
+// Alt Text Batch Jobs
+// -----------------------------------------------------------------------------
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model AltTextJob {
+  id             String    @id @default(uuid())
+  shop           String
+  status         JobStatus @default(PENDING)
+  
+  // Rule template (e.g. "{product_title} - {vendor}")
+  pattern        String
+  
+  // Job Progress Tracking
+  totalImages    Int       @default(0)
+  updatedImages  Int       @default(0)
+  failedImages   Int       @default(0)
+  errorMessage   String?
+  
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([shop])
+}
